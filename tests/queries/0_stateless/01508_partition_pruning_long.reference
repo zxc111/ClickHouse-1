@@ -182,12 +182,10 @@ select uniqExact(_part), count() from xMM where toStartOfDay(d) >= '2020-10-01 0
 2	10000
 Selected 2/6 parts by partition key, 2 parts by primary key, 2/2 marks by primary key, 2 marks to read from 2 ranges
 
-select uniqExact(_part), count() from xMM where d >= '2020-09-01 00:00:00' and d <= '2020-10-01 00:00:00';
-3	10001
+select uniqExact(_part), count() from xMM where d >= toDateTime('2020-09-01 00:00:00', 'Europe/Moscow') and d <= toDateTime('2020-10-01 00:00:00', 'Europe/Moscow');3	10001
 Selected 3/6 parts by partition key, 3 parts by primary key, 3/3 marks by primary key, 3 marks to read from 3 ranges
 
-select uniqExact(_part), count() from xMM where d >= '2020-09-01 00:00:00' and d < '2020-10-01 00:00:00';
-2	10000
+select uniqExact(_part), count() from xMM where d >= toDateTime('2020-09-01 00:00:00', 'Europe/Moscow') and d < toDateTime('2020-10-01 00:00:00', 'Europe/Moscow');2	10000
 Selected 2/6 parts by partition key, 2 parts by primary key, 2/2 marks by primary key, 2 marks to read from 2 ranges
 
 select uniqExact(_part), count() from xMM where d >= '2020-09-01 00:00:00' and d <= '2020-10-01 00:00:00' and a=1;
@@ -198,11 +196,11 @@ select uniqExact(_part), count() from xMM where d >= '2020-09-01 00:00:00' and d
 2	5001
 Selected 2/6 parts by partition key, 2 parts by primary key, 2/2 marks by primary key, 2 marks to read from 2 ranges
 
-select uniqExact(_part), count() from xMM where d >= '2020-09-01 00:00:00' and d < '2020-10-01 00:00:00' and a<>3;
+select uniqExact(_part), count() from xMM where d >= toDateTime('2020-09-01 00:00:00', 'Europe/Moscow') and d < toDateTime('2020-10-01 00:00:00', 'Europe/Moscow') and a<>3;
 1	5000
 Selected 1/6 parts by partition key, 1 parts by primary key, 1/1 marks by primary key, 1 marks to read from 1 ranges
 
-select uniqExact(_part), count() from xMM where d >= '2020-09-01 00:00:00' and d < '2020-11-01 00:00:00' and a = 1;
+select uniqExact(_part), count() from xMM where d >= toDateTime('2020-09-01 00:00:00', 'Europe/Moscow') and d < toDateTime('2020-11-01 00:00:00', 'Europe/Moscow') and a = 1;
 2	10000
 Selected 2/6 parts by partition key, 2 parts by primary key, 2/2 marks by primary key, 2 marks to read from 2 ranges
 
@@ -226,7 +224,7 @@ select uniqExact(_part), count() from xMM where a = 1;
 2	15000
 Selected 2/5 parts by partition key, 2 parts by primary key, 2/2 marks by primary key, 2 marks to read from 2 ranges
 
-select uniqExact(_part), count() from xMM where toStartOfDay(d) >= '2020-10-01 00:00:00';
+select uniqExact(_part), count() from xMM where toStartOfDay(d) >= toDateTime('2020-10-01 00:00:00', 'Europe/Moscow');
 1	10000
 Selected 1/5 parts by partition key, 1 parts by primary key, 1/1 marks by primary key, 1 marks to read from 1 ranges
 
@@ -234,7 +232,7 @@ select uniqExact(_part), count() from xMM where a <> 66;
 5	30000
 Selected 5/5 parts by partition key, 5 parts by primary key, 5/5 marks by primary key, 5 marks to read from 5 ranges
 
-select uniqExact(_part), count() from xMM where d >= '2020-09-01 00:00:00' and d <= '2020-10-01 00:00:00' and a<>3;
+select uniqExact(_part), count() from xMM where d >= toDateTime('2020-09-01 00:00:00', 'Europe/Moscow') and d <= toDateTime('2020-10-01 00:00:00', 'Europe/Moscow') and a<>3;
 2	5001
 Selected 2/5 parts by partition key, 2 parts by primary key, 2/2 marks by primary key, 2 marks to read from 2 ranges
 

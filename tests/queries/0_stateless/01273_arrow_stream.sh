@@ -11,6 +11,7 @@ ${CLICKHOUSE_CLIENT} --query="DROP TABLE IF EXISTS contributors"
 ${CLICKHOUSE_CLIENT} --query="CREATE TABLE contributors (name String) ENGINE = Memory"
 ${CLICKHOUSE_CLIENT} --query="SELECT * FROM system.contributors ORDER BY name DESC FORMAT ArrowStream" | ${CLICKHOUSE_CLIENT} --query="INSERT INTO contributors FORMAT ArrowStream"
 # random results
+
 ${CLICKHOUSE_CLIENT} --query="SELECT * FROM contributors LIMIT 10" > /dev/null
 ${CLICKHOUSE_CLIENT} --query="DROP TABLE contributors"
 

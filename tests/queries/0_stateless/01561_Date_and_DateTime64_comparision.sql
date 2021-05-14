@@ -33,7 +33,7 @@ SELECT
     dt64 != toDateTime64(d, 1, 'UTC')
 FROM
 (
-    WITH toDateTime('2019-09-16 19:20:11') as val
+    WITH toDateTime('2019-09-16 19:20:11', 'Europe/Moscow') as val
     SELECT
         number - 1 as n,
         toDateTime64(val, 1, 'UTC') AS dt64,

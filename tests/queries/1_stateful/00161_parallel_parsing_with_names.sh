@@ -10,7 +10,7 @@ $CLICKHOUSE_CLIENT -q "DROP TABLE IF EXISTS parsing_with_names"
 for format in "${FORMATS[@]}"
 do
     # Columns are permuted
-    $CLICKHOUSE_CLIENT -q "CREATE TABLE parsing_with_names(c FixedString(16), a DateTime('Europe/Moscow'),  b String) ENGINE=Memory()"
+    $CLICKHOUSE_CLIENT -q "CREATE TABLE parsing_with_names(c FixedString(16), a DateTime('Europe/Moscow'), b String) ENGINE=Memory()"
 
     echo "$format, false";
     $CLICKHOUSE_CLIENT --output_format_parallel_formatting=false -q \
@@ -21,7 +21,7 @@ do
     $CLICKHOUSE_CLIENT -q "DROP TABLE IF EXISTS parsing_with_names"
 
 
-    $CLICKHOUSE_CLIENT -q "CREATE TABLE parsing_with_names(c FixedString(16), a DateTime('Europe/Moscow'),  b String) ENGINE=Memory()"
+    $CLICKHOUSE_CLIENT -q "CREATE TABLE parsing_with_names(c FixedString(16), a DateTime('Europe/Moscow'), b String) ENGINE=Memory()"
     echo "$format, true";
     $CLICKHOUSE_CLIENT --output_format_parallel_formatting=false -q \
     "SELECT URLRegions as d, toTimeZone(ClientEventTime, 'Europe/Moscow') as a, MobilePhoneModel as b, ParamPrice as e, ClientIP6 as c FROM test.hits LIMIT 50000 Format $format" | \

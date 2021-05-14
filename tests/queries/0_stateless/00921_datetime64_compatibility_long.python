@@ -186,7 +186,7 @@ def execute_functions_for_types(functions, types):
 WITH \
 toDateTime64('2019-09-16 19:20:11.234', 3, 'Europe/Minsk') as DT64, \
 toDateTime('2019-09-16 19:20:11', 'Europe/Minsk') as DT, \
-toDate('2019-09-16') as D, {X} as N".format(X=dt)
+toDate('2019-09-16') as D, toTimeZone({X}, 'Europe/Minsk') as N".format(X=dt)
             print(("""{prologue} SELECT toTypeName(r), {func} as r FORMAT CSV;""".format(prologue=prologue, func=func)))
         print("""SELECT '------------------------------------------';""")
 

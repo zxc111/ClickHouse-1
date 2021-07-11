@@ -2328,7 +2328,6 @@ void MergeTreeData::removePartsFromWorkingSetImmediatelyAndSetTemporaryState(con
 void MergeTreeData::removePartsFromWorkingSet(const DataPartsVector & remove, bool clear_without_timeout, DataPartsLock * acquired_lock)
 {
     auto lock = (acquired_lock) ? DataPartsLock() : lockParts();
-
     for (const auto & part : remove)
     {
         if (!data_parts_by_info.count(part->info))
@@ -3056,8 +3055,34 @@ Pipe MergeTreeData::alterPartition(
     ContextPtr query_context)
 {
     PartitionCommandsResultInfo result;
+
+    const auto settings = getSettings();
     for (const PartitionCommand & command : commands)
     {
+        if (settings->alter_partitions_throw_if_noop
+            && (command.type == PartitionCommand::DROP_PARTITION
+            || command.type == PartitionCommand::DROP_DETACHED_PARTITION
+            || command.type == PartitionCommand::FREEZE_PARTITION
+            || command.type == PartitionCommand::REPLACE_PARTITION
+            || command.type == PartitionCommand::MOVE_PARTITION))
+        {
+            if (command.part)
+            {
+                auto part_name = command.partition->as<ASTLiteral &>().value.safeGet<String>();
+                auto part = getPartIfExists(part_name, {MergeTreeDataPartState::Committed});
+                if (!part)
+                    throw Exception(ErrorCodes::NO_SUCH_DATA_PART, "No part {} in committed state", part_name);
+            }
+            else
+            {
+                String partition_id = getPartitionIDFromQuery(command.partition, query_context);
+                auto parts_to_remove = getDataPartsVectorInPartition(MergeTreeDataPartState::Committed, partition_id);
+
+                if (parts_to_remove.empty())
+                    throw Exception(ErrorCodes::NO_SUCH_DATA_PART, "Partition " + partition_id + " is not exists");
+            }
+        }
+
         PartitionCommandsResultInfo current_command_results;
         switch (command.type)
         {

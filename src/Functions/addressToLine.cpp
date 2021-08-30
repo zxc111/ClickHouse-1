@@ -1,4 +1,4 @@
-#if defined(__ELF__) && !defined(__FreeBSD__)
+//#if defined(__ELF__) && !defined(__FreeBSD__)
 
 #include <Common/Dwarf.h>
 #include <Common/SymbolIndex.h>
@@ -158,4 +158,4 @@ void registerFunctionAddressToLine(FunctionFactory & factory)
 
 }
 
-#endif
+//#endif

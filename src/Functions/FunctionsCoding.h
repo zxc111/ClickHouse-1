@@ -18,24 +18,23 @@
 #include <DataTypes/DataTypesNumber.h>
 #include <Functions/FunctionHelpers.h>
 #include <Functions/IFunction.h>
+#include <IO/WriteHelpers.h>
 #include <Interpreters/Context_fwd.h>
 #include <Interpreters/castColumn.h>
-#include <IO/WriteHelpers.h>
+#include <Common/BitHelpers.h>
 #include <Common/IPv6ToBinary.h>
 #include <Common/formatIPv6.h>
 #include <Common/hex.h>
 #include <Common/typeid_cast.h>
-#include <Common/BitHelpers.h>
 
+#include <array>
+#include <type_traits>
 #include <arpa/inet.h>
 #include <common/range.h>
-#include <type_traits>
-#include <array>
 
 
 namespace DB
 {
-
 namespace ErrorCodes
 {
     extern const int ILLEGAL_TYPE_OF_ARGUMENT;
@@ -81,10 +80,10 @@ public:
     {
         const auto * ptr = checkAndGetDataType<DataTypeFixedString>(arguments[0].get());
         if (!ptr || ptr->getN() != IPV6_BINARY_LENGTH)
-            throw Exception("Illegal type " + arguments[0]->getName() +
-                            " of argument of function " + getName() +
-                            ", expected FixedString(" + toString(IPV6_BINARY_LENGTH) + ")",
-                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName() + ", expected FixedString("
+                    + toString(IPV6_BINARY_LENGTH) + ")",
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeString>();
     }
@@ -99,11 +98,10 @@ public:
         if (const auto * col_in = checkAndGetColumn<ColumnFixedString>(column.get()))
         {
             if (col_in->getN() != IPV6_BINARY_LENGTH)
-                throw Exception("Illegal type " + col_type_name.type->getName() +
-                                " of column " + col_in->getName() +
-                                " argument of function " + getName() +
-                                ", expected FixedString(" + toString(IPV6_BINARY_LENGTH) + ")",
-                                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+                throw Exception(
+                    "Illegal type " + col_type_name.type->getName() + " of column " + col_in->getName() + " argument of function "
+                        + getName() + ", expected FixedString(" + toString(IPV6_BINARY_LENGTH) + ")",
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
             const auto size = col_in->size();
             const auto & vec_in = col_in->getChars();
@@ -129,9 +127,8 @@ public:
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                + " of argument of function " + getName(),
-                ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
@@ -150,20 +147,20 @@ public:
     {
         const auto * ptr = checkAndGetDataType<DataTypeFixedString>(arguments[0].get());
         if (!ptr || ptr->getN() != IPV6_BINARY_LENGTH)
-            throw Exception("Illegal type " + arguments[0]->getName() +
-                            " of argument 1 of function " + getName() +
-                            ", expected FixedString(" + toString(IPV6_BINARY_LENGTH) + ")",
-                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument 1 of function " + getName() + ", expected FixedString("
+                    + toString(IPV6_BINARY_LENGTH) + ")",
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         if (!WhichDataType(arguments[1]).isUInt8())
-            throw Exception("Illegal type " + arguments[1]->getName() +
-                            " of argument 2 of function " + getName(),
-                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[1]->getName() + " of argument 2 of function " + getName(),
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         if (!WhichDataType(arguments[2]).isUInt8())
-            throw Exception("Illegal type " + arguments[2]->getName() +
-                            " of argument 3 of function " + getName(),
-                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[2]->getName() + " of argument 3 of function " + getName(),
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeString>();
     }
@@ -184,35 +181,34 @@ public:
         if (const auto * col_in = checkAndGetColumn<ColumnFixedString>(column.get()))
         {
             if (col_in->getN() != IPV6_BINARY_LENGTH)
-                throw Exception("Illegal type " + col_type_name.type->getName() +
-                                " of column " + col_in->getName() +
-                                " argument of function " + getName() +
-                                ", expected FixedString(" + toString(IPV6_BINARY_LENGTH) + ")",
-                                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+                throw Exception(
+                    "Illegal type " + col_type_name.type->getName() + " of column " + col_in->getName() + " argument of function "
+                        + getName() + ", expected FixedString(" + toString(IPV6_BINARY_LENGTH) + ")",
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
             const auto * ipv6_zeroed_tail_bytes = checkAndGetColumnConst<ColumnVector<UInt8>>(col_ipv6_zeroed_tail_bytes.get());
             if (!ipv6_zeroed_tail_bytes)
-                throw Exception("Illegal type " + col_ipv6_zeroed_tail_bytes_type.type->getName() +
-                                " of argument 2 of function " + getName(),
-                                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+                throw Exception(
+                    "Illegal type " + col_ipv6_zeroed_tail_bytes_type.type->getName() + " of argument 2 of function " + getName(),
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
             UInt8 ipv6_zeroed_tail_bytes_count = ipv6_zeroed_tail_bytes->getValue<UInt8>();
             if (ipv6_zeroed_tail_bytes_count > IPV6_BINARY_LENGTH)
-                throw Exception("Illegal value for argument 2 " + col_ipv6_zeroed_tail_bytes_type.type->getName() +
-                                " of function " + getName(),
-                                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+                throw Exception(
+                    "Illegal value for argument 2 " + col_ipv6_zeroed_tail_bytes_type.type->getName() + " of function " + getName(),
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
             const auto * ipv4_zeroed_tail_bytes = checkAndGetColumnConst<ColumnVector<UInt8>>(col_ipv4_zeroed_tail_bytes.get());
             if (!ipv4_zeroed_tail_bytes)
-                throw Exception("Illegal type " + col_ipv4_zeroed_tail_bytes_type.type->getName() +
-                                " of argument 3 of function " + getName(),
-                                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+                throw Exception(
+                    "Illegal type " + col_ipv4_zeroed_tail_bytes_type.type->getName() + " of argument 3 of function " + getName(),
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
             UInt8 ipv4_zeroed_tail_bytes_count = ipv4_zeroed_tail_bytes->getValue<UInt8>();
             if (ipv4_zeroed_tail_bytes_count > IPV6_BINARY_LENGTH)
-                throw Exception("Illegal value for argument 3 " + col_ipv4_zeroed_tail_bytes_type.type->getName() +
-                                " of function " + getName(),
-                                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+                throw Exception(
+                    "Illegal value for argument 3 " + col_ipv4_zeroed_tail_bytes_type.type->getName() + " of function " + getName(),
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
             const auto size = col_in->size();
             const auto & vec_in = col_in->getChars();
@@ -240,16 +236,15 @@ public:
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-            + " of argument of function " + getName(),
-            ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 
 private:
     static bool isIPv4Mapped(const UInt8 * address)
     {
-        return (unalignedLoad<UInt64>(address) == 0) &&
-            ((unalignedLoad<UInt64>(address + 8) & 0x00000000FFFFFFFFull) == 0x00000000FFFF0000ull);
+        return (unalignedLoad<UInt64>(address) == 0)
+            && ((unalignedLoad<UInt64>(address + 8) & 0x00000000FFFFFFFFull) == 0x00000000FFFF0000ull);
     }
 
     static void cutAddress(const unsigned char * address, char *& dst, UInt8 zeroed_tail_bytes_count)
@@ -327,9 +322,8 @@ public:
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                + " of argument of function " + getName(),
-                ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
@@ -343,10 +337,7 @@ public:
     static constexpr auto name = Name::name;
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionIPv4NumToString<mask_tail_octets, Name>>(); }
 
-    String getName() const override
-    {
-        return name;
-    }
+    String getName() const override { return name; }
 
     size_t getNumberOfArguments() const override { return 1; }
     bool isInjective(const ColumnsWithTypeAndName &) const override { return mask_tail_octets == 0; }
@@ -354,8 +345,9 @@ public:
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!WhichDataType(arguments[0]).isUInt32())
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName() + ", expected UInt32",
-            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName() + ", expected UInt32",
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeString>();
     }
@@ -382,7 +374,7 @@ public:
 
             for (size_t i = 0; i < vec_in.size(); ++i)
             {
-                DB::formatIPv4(reinterpret_cast<const unsigned char*>(&vec_in[i]), pos, mask_tail_octets, "xxx");
+                DB::formatIPv4(reinterpret_cast<const unsigned char *>(&vec_in[i]), pos, mask_tail_octets, "xxx");
                 offsets_res[i] = pos - begin;
             }
 
@@ -391,9 +383,8 @@ public:
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-            + " of argument of function " + getName(),
-            ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
@@ -404,18 +395,15 @@ public:
     static constexpr auto name = "IPv4StringToNum";
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionIPv4StringToNum>(); }
 
-    String getName() const override
-    {
-        return name;
-    }
+    String getName() const override { return name; }
 
     size_t getNumberOfArguments() const override { return 1; }
 
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!isString(arguments[0]))
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName(),
-            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeUInt32>();
     }
@@ -423,7 +411,7 @@ public:
     static inline UInt32 parseIPv4(const char * pos)
     {
         UInt32 result = 0;
-        DB::parseIPv4(pos, reinterpret_cast<unsigned char*>(&result));
+        DB::parseIPv4(pos, reinterpret_cast<unsigned char *>(&result));
 
         return result;
     }
@@ -454,9 +442,8 @@ public:
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                + " of argument of function " + getName(),
-                ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
@@ -464,7 +451,7 @@ public:
 class FunctionIPv4ToIPv6 : public IFunction
 {
 public:
-     static constexpr auto name = "IPv4ToIPv6";
+    static constexpr auto name = "IPv4ToIPv6";
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionIPv4ToIPv6>(); }
 
     String getName() const override { return name; }
@@ -475,8 +462,8 @@ public:
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!checkAndGetDataType<DataTypeUInt32>(arguments[0].get()))
-            throw Exception("Illegal type " + arguments[0]->getName() +
-                            " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeFixedString>(16);
     }
@@ -503,9 +490,8 @@ public:
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                + " of argument of function " + getName(),
-                ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 
 private:
@@ -522,18 +508,15 @@ public:
     static constexpr auto name = "toIPv4";
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionToIPv4>(); }
 
-    String getName() const override
-    {
-        return name;
-    }
+    String getName() const override { return name; }
 
     size_t getNumberOfArguments() const override { return 1; }
 
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!isString(arguments[0]))
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName(),
-            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return DataTypeFactory::instance().get("IPv4");
     }
@@ -550,8 +533,8 @@ public:
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!isString(arguments[0]))
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName(),
-            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return DataTypeFactory::instance().get("IPv6");
     }
@@ -563,10 +546,7 @@ public:
     static constexpr auto name = "MACNumToString";
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionMACNumToString>(); }
 
-    String getName() const override
-    {
-        return name;
-    }
+    String getName() const override { return name; }
 
     size_t getNumberOfArguments() const override { return 1; }
     bool isInjective(const ColumnsWithTypeAndName &) const override { return true; }
@@ -574,8 +554,9 @@ public:
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!WhichDataType(arguments[0]).isUInt64())
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName() + ", expected UInt64",
-            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName() + ", expected UInt64",
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeString>();
     }
@@ -628,9 +609,8 @@ public:
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-            + " of argument of function " + getName(),
-            ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
@@ -647,18 +627,9 @@ struct ParseMACImpl
       */
     static UInt64 parse(const char * pos)
     {
-        return (UInt64(unhex(pos[0])) << 44)
-             | (UInt64(unhex(pos[1])) << 40)
-             | (UInt64(unhex(pos[3])) << 36)
-             | (UInt64(unhex(pos[4])) << 32)
-             | (UInt64(unhex(pos[6])) << 28)
-             | (UInt64(unhex(pos[7])) << 24)
-             | (UInt64(unhex(pos[9])) << 20)
-             | (UInt64(unhex(pos[10])) << 16)
-             | (UInt64(unhex(pos[12])) << 12)
-             | (UInt64(unhex(pos[13])) << 8)
-             | (UInt64(unhex(pos[15])) << 4)
-             | (UInt64(unhex(pos[16])));
+        return (UInt64(unhex(pos[0])) << 44) | (UInt64(unhex(pos[1])) << 40) | (UInt64(unhex(pos[3])) << 36) | (UInt64(unhex(pos[4])) << 32)
+            | (UInt64(unhex(pos[6])) << 28) | (UInt64(unhex(pos[7])) << 24) | (UInt64(unhex(pos[9])) << 20) | (UInt64(unhex(pos[10])) << 16)
+            | (UInt64(unhex(pos[12])) << 12) | (UInt64(unhex(pos[13])) << 8) | (UInt64(unhex(pos[15])) << 4) | (UInt64(unhex(pos[16])));
     }
 
     static constexpr auto name = "MACStringToNum";
@@ -674,12 +645,8 @@ struct ParseOUIImpl
       */
     static UInt64 parse(const char * pos)
     {
-        return (UInt64(unhex(pos[0])) << 20)
-             | (UInt64(unhex(pos[1])) << 16)
-             | (UInt64(unhex(pos[3])) << 12)
-             | (UInt64(unhex(pos[4])) << 8)
-             | (UInt64(unhex(pos[6])) << 4)
-             | (UInt64(unhex(pos[7])));
+        return (UInt64(unhex(pos[0])) << 20) | (UInt64(unhex(pos[1])) << 16) | (UInt64(unhex(pos[3])) << 12) | (UInt64(unhex(pos[4])) << 8)
+            | (UInt64(unhex(pos[6])) << 4) | (UInt64(unhex(pos[7])));
     }
 
     static constexpr auto name = "MACStringToOUI";
@@ -693,18 +660,15 @@ public:
     static constexpr auto name = Impl::name;
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionMACStringTo<Impl>>(); }
 
-    String getName() const override
-    {
-        return name;
-    }
+    String getName() const override { return name; }
 
     size_t getNumberOfArguments() const override { return 1; }
 
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!isString(arguments[0]))
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName(),
-            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeUInt64>();
     }
@@ -742,24 +706,19 @@ public:
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                + " of argument of function " + getName(),
-                ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
 
 class FunctionUUIDNumToString : public IFunction
 {
-
 public:
     static constexpr auto name = "UUIDNumToString";
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionUUIDNumToString>(); }
 
-    String getName() const override
-    {
-        return name;
-    }
+    String getName() const override { return name; }
 
     size_t getNumberOfArguments() const override { return 1; }
     bool isInjective(const ColumnsWithTypeAndName &) const override { return true; }
@@ -768,10 +727,10 @@ public:
     {
         const auto * ptr = checkAndGetDataType<DataTypeFixedString>(arguments[0].get());
         if (!ptr || ptr->getN() != uuid_bytes_length)
-            throw Exception("Illegal type " + arguments[0]->getName() +
-                            " of argument of function " + getName() +
-                            ", expected FixedString(" + toString(uuid_bytes_length) + ")",
-                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName() + ", expected FixedString("
+                    + toString(uuid_bytes_length) + ")",
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeString>();
     }
@@ -786,11 +745,10 @@ public:
         if (const auto * col_in = checkAndGetColumn<ColumnFixedString>(column.get()))
         {
             if (col_in->getN() != uuid_bytes_length)
-                throw Exception("Illegal type " + col_type_name.type->getName() +
-                                " of column " + col_in->getName() +
-                                " argument of function " + getName() +
-                                ", expected FixedString(" + toString(uuid_bytes_length) + ")",
-                                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+                throw Exception(
+                    "Illegal type " + col_type_name.type->getName() + " of column " + col_in->getName() + " argument of function "
+                        + getName() + ", expected FixedString(" + toString(uuid_bytes_length) + ")",
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
             const auto size = col_in->size();
             const auto & vec_in = col_in->getChars();
@@ -818,9 +776,8 @@ public:
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                + " of argument of function " + getName(),
-                ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
@@ -854,10 +811,7 @@ public:
     static constexpr auto name = "UUIDStringToNum";
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionUUIDStringToNum>(); }
 
-    String getName() const override
-    {
-        return name;
-    }
+    String getName() const override { return name; }
 
     size_t getNumberOfArguments() const override { return 1; }
     bool isInjective(const ColumnsWithTypeAndName &) const override { return true; }
@@ -869,10 +823,10 @@ public:
         {
             const auto * ptr = checkAndGetDataType<DataTypeFixedString>(arguments[0].get());
             if (!ptr || ptr->getN() != uuid_text_length)
-                throw Exception("Illegal type " + arguments[0]->getName() +
-                                " of argument of function " + getName() +
-                                ", expected FixedString(" + toString(uuid_text_length) + ")",
-                                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+                throw Exception(
+                    "Illegal type " + arguments[0]->getName() + " of argument of function " + getName() + ", expected FixedString("
+                        + toString(uuid_text_length) + ")",
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
         }
 
         return std::make_shared<DataTypeFixedString>(uuid_bytes_length);
@@ -919,11 +873,10 @@ public:
         else if (const auto * col_in_fixed = checkAndGetColumn<ColumnFixedString>(column.get()))
         {
             if (col_in_fixed->getN() != uuid_text_length)
-                throw Exception("Illegal type " + col_type_name.type->getName() +
-                                " of column " + col_in_fixed->getName() +
-                                " argument of function " + getName() +
-                                ", expected FixedString(" + toString(uuid_text_length) + ")",
-                                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+                throw Exception(
+                    "Illegal type " + col_type_name.type->getName() + " of column " + col_in_fixed->getName() + " argument of function "
+                        + getName() + ", expected FixedString(" + toString(uuid_text_length) + ")",
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
             const auto size = col_in_fixed->size();
             const auto & vec_in = col_in_fixed->getChars();
@@ -946,8 +899,8 @@ public:
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
@@ -973,16 +926,10 @@ public:
     {
         WhichDataType which(arguments[0]);
 
-        if (!which.isStringOrFixedString() &&
-            !which.isDate() &&
-            !which.isDateTime() &&
-            !which.isDateTime64() &&
-            !which.isUInt() &&
-            !which.isFloat() &&
-            !which.isDecimal() &&
-            !which.isAggregateFunction())
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName(),
-                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+        if (!which.isStringOrFixedString() && !which.isDate() && !which.isDateTime() && !which.isDateTime64() && !which.isUInt()
+            && !which.isFloat() && !which.isDecimal() && !which.isAggregateFunction())
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeString>();
     }
@@ -1001,22 +948,16 @@ public:
             return res_column;
         }
 
-        if (tryExecuteUInt<UInt8>(column, res_column) ||
-            tryExecuteUInt<UInt16>(column, res_column) ||
-            tryExecuteUInt<UInt32>(column, res_column) ||
-            tryExecuteUInt<UInt64>(column, res_column) ||
-            tryExecuteString(column, res_column) ||
-            tryExecuteFixedString(column, res_column) ||
-            tryExecuteFloat<Float32>(column, res_column) ||
-            tryExecuteFloat<Float64>(column, res_column) ||
-            tryExecuteDecimal<Decimal32>(column, res_column) ||
-            tryExecuteDecimal<Decimal64>(column, res_column) ||
-            tryExecuteDecimal<Decimal128>(column, res_column))
+        if (tryExecuteUInt<UInt8>(column, res_column) || tryExecuteUInt<UInt16>(column, res_column)
+            || tryExecuteUInt<UInt32>(column, res_column) || tryExecuteUInt<UInt64>(column, res_column)
+            || tryExecuteString(column, res_column) || tryExecuteFixedString(column, res_column)
+            || tryExecuteFloat<Float32>(column, res_column) || tryExecuteFloat<Float64>(column, res_column)
+            || tryExecuteDecimal<Decimal32>(column, res_column) || tryExecuteDecimal<Decimal64>(column, res_column)
+            || tryExecuteDecimal<Decimal128>(column, res_column))
             return res_column;
 
-        throw Exception("Illegal column " + arguments[0].column->getName()
-                        + " of argument of function " + getName(),
-                        ErrorCodes::ILLEGAL_COLUMN);
+        throw Exception(
+            "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 
     template <typename T>
@@ -1024,7 +965,7 @@ public:
     {
         const ColumnVector<T> * col_vec = checkAndGetColumn<ColumnVector<T>>(col);
 
-        static constexpr size_t MAX_LENGTH = sizeof(T) * word_size + 1;    /// Including trailing zero byte.
+        static constexpr size_t MAX_LENGTH = sizeof(T) * word_size + 1; /// Including trailing zero byte.
 
         if (col_vec)
         {
@@ -1036,7 +977,7 @@ public:
 
             size_t size = in_vec.size();
             out_offsets.resize(size);
-            out_vec.resize(size * (word_size+1) + MAX_LENGTH); /// word_size+1 is length of one byte in hex/bin plus zero byte.
+            out_vec.resize(size * (word_size + 1) + MAX_LENGTH); /// word_size+1 is length of one byte in hex/bin plus zero byte.
 
             size_t pos = 0;
             for (size_t i = 0; i < size; ++i)
@@ -1063,7 +1004,7 @@ public:
         }
     }
 
-    bool tryExecuteString(const IColumn *col, ColumnPtr &col_res) const
+    bool tryExecuteString(const IColumn * col, ColumnPtr & col_res) const
     {
         const ColumnString * col_str_in = checkAndGetColumn<ColumnString>(col);
 
@@ -1126,49 +1067,49 @@ public:
 
     static bool tryExecuteFixedString(const IColumn * col, ColumnPtr & col_res)
     {
-         const ColumnFixedString * col_fstr_in = checkAndGetColumn<ColumnFixedString>(col);
+        const ColumnFixedString * col_fstr_in = checkAndGetColumn<ColumnFixedString>(col);
 
-         if (col_fstr_in)
-         {
-             auto col_str = ColumnString::create();
-             ColumnString::Chars & out_vec = col_str->getChars();
-             ColumnString::Offsets & out_offsets = col_str->getOffsets();
+        if (col_fstr_in)
+        {
+            auto col_str = ColumnString::create();
+            ColumnString::Chars & out_vec = col_str->getChars();
+            ColumnString::Offsets & out_offsets = col_str->getOffsets();
 
-             const ColumnString::Chars & in_vec = col_fstr_in->getChars();
+            const ColumnString::Chars & in_vec = col_fstr_in->getChars();
 
-             size_t size = col_fstr_in->size();
+            size_t size = col_fstr_in->size();
 
-             out_offsets.resize(size);
-             out_vec.resize(in_vec.size() * word_size + size);
+            out_offsets.resize(size);
+            out_vec.resize(in_vec.size() * word_size + size);
 
-             char * begin = reinterpret_cast<char *>(out_vec.data());
-             char * pos = begin;
+            char * begin = reinterpret_cast<char *>(out_vec.data());
+            char * pos = begin;
 
-             size_t n = col_fstr_in->getN();
+            size_t n = col_fstr_in->getN();
 
-             size_t prev_offset = 0;
+            size_t prev_offset = 0;
 
-             for (size_t i = 0; i < size; ++i)
-             {
-                 size_t new_offset = prev_offset + n;
+            for (size_t i = 0; i < size; ++i)
+            {
+                size_t new_offset = prev_offset + n;
 
-                 Impl::executeOneString(&in_vec[prev_offset], &in_vec[new_offset], pos);
+                Impl::executeOneString(&in_vec[prev_offset], &in_vec[new_offset], pos);
 
-                 out_offsets[i] = pos - begin;
-                 prev_offset = new_offset;
-             }
+                out_offsets[i] = pos - begin;
+                prev_offset = new_offset;
+            }
 
-             if (!out_offsets.empty() && out_offsets.back() != out_vec.size())
-                 throw Exception("Column size mismatch (internal logical error)", ErrorCodes::LOGICAL_ERROR);
+            if (!out_offsets.empty() && out_offsets.back() != out_vec.size())
+                throw Exception("Column size mismatch (internal logical error)", ErrorCodes::LOGICAL_ERROR);
 
-             col_res = std::move(col_str);
-             return true;
-         }
-         else
-         {
-             return false;
-         }
-     }
+            col_res = std::move(col_str);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
     template <typename T>
     bool tryExecuteFloat(const IColumn * col, ColumnPtr & col_res) const
@@ -1204,8 +1145,8 @@ public:
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!isString(arguments[0]))
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName(),
-                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeString>();
     }
@@ -1238,7 +1179,8 @@ public:
             {
                 size_t new_offset = in_offsets[i];
 
-                Impl::decode(reinterpret_cast<const char *>(&in_vec[prev_offset]), reinterpret_cast<const char *>(&in_vec[new_offset - 1]), pos);
+                Impl::decode(
+                    reinterpret_cast<const char *>(&in_vec[prev_offset]), reinterpret_cast<const char *>(&in_vec[new_offset - 1]), pos);
 
                 out_offsets[i] = pos - begin;
 
@@ -1251,9 +1193,8 @@ public:
         }
         else
         {
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                            + " of argument of function " + getName(),
-                            ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
         }
     }
 };
@@ -1477,10 +1418,7 @@ public:
     static constexpr auto name = "char";
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionChar>(); }
 
-    String getName() const override
-    {
-        return name;
-    }
+    String getName() const override { return name; }
 
     bool isVariadic() const override { return true; }
     bool isInjective(const ColumnsWithTypeAndName &) const override { return true; }
@@ -1489,16 +1427,17 @@ public:
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (arguments.empty())
-            throw Exception("Number of arguments for function " + getName() + " can't be " + toString(arguments.size())
-                    + ", should be at least 1", ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Number of arguments for function " + getName() + " can't be " + toString(arguments.size()) + ", should be at least 1",
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         for (const auto & arg : arguments)
         {
             WhichDataType which(arg);
             if (!(which.isInt() || which.isUInt() || which.isFloat()))
-                throw Exception("Illegal type " + arg->getName() + " of argument of function " + getName()
-                    + ", must be Int, UInt or Float number",
-                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+                throw Exception(
+                    "Illegal type " + arg->getName() + " of argument of function " + getName() + ", must be Int, UInt or Float number",
+                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
         }
         return std::make_shared<DataTypeString>();
     }
@@ -1507,6 +1446,7 @@ public:
 
     ColumnPtr executeImpl(const ColumnsWithTypeAndName & arguments, const DataTypePtr &, size_t input_rows_count) const override
     {
+        std::cout << 111111 <<std::endl;
         auto col_str = ColumnString::create();
         ColumnString::Chars & out_vec = col_str->getChars();
         ColumnString::Offsets & out_offsets = col_str->getOffsets();
@@ -1529,18 +1469,19 @@ public:
             const IColumn * column = columns_holder[idx].get();
 
             if (!(executeNumber<UInt8>(*column, out_vec, idx, input_rows_count, size_per_row)
-                || executeNumber<UInt16>(*column, out_vec, idx, input_rows_count, size_per_row)
-                || executeNumber<UInt32>(*column, out_vec, idx, input_rows_count, size_per_row)
-                || executeNumber<UInt64>(*column, out_vec, idx, input_rows_count, size_per_row)
-                || executeNumber<Int8>(*column, out_vec, idx, input_rows_count, size_per_row)
-                || executeNumber<Int16>(*column, out_vec, idx, input_rows_count, size_per_row)
-                || executeNumber<Int32>(*column, out_vec, idx, input_rows_count, size_per_row)
-                || executeNumber<Int64>(*column, out_vec, idx, input_rows_count, size_per_row)
-                || executeNumber<Float32>(*column, out_vec, idx, input_rows_count, size_per_row)
-                || executeNumber<Float64>(*column, out_vec, idx, input_rows_count, size_per_row)))
+                  || executeNumber<UInt16>(*column, out_vec, idx, input_rows_count, size_per_row)
+                  || executeNumber<UInt32>(*column, out_vec, idx, input_rows_count, size_per_row)
+                  || executeNumber<UInt64>(*column, out_vec, idx, input_rows_count, size_per_row)
+                  || executeNumber<Int8>(*column, out_vec, idx, input_rows_count, size_per_row)
+                  || executeNumber<Int16>(*column, out_vec, idx, input_rows_count, size_per_row)
+                  || executeNumber<Int32>(*column, out_vec, idx, input_rows_count, size_per_row)
+                  || executeNumber<Int64>(*column, out_vec, idx, input_rows_count, size_per_row)
+                  || executeNumber<Float32>(*column, out_vec, idx, input_rows_count, size_per_row)
+                  || executeNumber<Float64>(*column, out_vec, idx, input_rows_count, size_per_row)))
             {
-                throw Exception{"Illegal column " + arguments[idx].column->getName()
-                                + " of first argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN};
+                throw Exception{
+                    "Illegal column " + arguments[idx].column->getName() + " of first argument of function " + getName(),
+                    ErrorCodes::ILLEGAL_COLUMN};
             }
         }
 
@@ -1549,7 +1490,12 @@ public:
 
 private:
     template <typename T>
-    bool executeNumber(const IColumn & src_data, ColumnString::Chars & out_vec, const size_t & column_idx, const size_t & rows, const size_t & size_per_row) const
+    bool executeNumber(
+        const IColumn & src_data,
+        ColumnString::Chars & out_vec,
+        const size_t & column_idx,
+        const size_t & rows,
+        const size_t & size_per_row) const
     {
         const ColumnVector<T> * src_data_concrete = checkAndGetColumn<ColumnVector<T>>(&src_data);
 
@@ -1566,16 +1512,198 @@ private:
     }
 };
 
+
+class FunctionTest : public IFunction
+{
+public:
+    static constexpr auto name = "test";
+    static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionTest>(); }
+
+    String getName() const override { return name; }
+
+    bool isVariadic() const override { return true; }
+//    bool isInjective(const ColumnsWithTypeAndName &) const override { return false; }
+    size_t getNumberOfArguments() const override { return 0; }
+
+    DataTypePtr getReturnTypeImpl(const DataTypes & ) const override
+    {
+//        if (!arguments.empty())
+//            throw Exception(
+//                "Number of arguments for function " + getName() + " can't be " + toString(arguments.size()) + ", should be at least 1",
+//                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+        return std::make_shared<DataTypeArray>(std::make_shared<DataTypeString>());
+    }
+
+    bool useDefaultImplementationForConstants() const override { return true; }
+
+    ColumnPtr executeImpl(const ColumnsWithTypeAndName &, const DataTypePtr &, size_t) const override
+    {
+        auto col_res = ColumnArray::create(ColumnString::create());
+        ColumnArray::Offsets & res_offsets = col_res->getOffsets();
+//        res_offsets.reserve(0);
+//        res_offsets.reserve(1);
+
+        ColumnString & res_strings = typeid_cast<ColumnString &>(col_res->getData());
+        ColumnString::Chars & res_strings_chars = res_strings.getChars();
+        ColumnString::Offsets & res_strings_offsets = res_strings.getOffsets();
+        std::cout << 2222 <<std::endl;
+        res_strings.reserve(100);
+
+        std::cout << 3333 <<std::endl;
+        res_strings_chars.resize( (3+1)*2);
+        res_strings_offsets.reserve(1);
+        char * out = reinterpret_cast<char *>(res_strings_chars.data());
+
+        for (size_t i =0; i<8; ++i)
+        {
+//            res_strings_chars.resize( i+1);
+
+            // char size
+            if (i%2 == 0)
+            {
+                std::cout << 4444 <<std::endl;
+                *out = '0'+i;
+            }
+            else
+            {
+                ++out;
+                *out = '\0';
+                res_strings_offsets.push_back(i+1);
+            }
+
+        }
+
+//        for (size_t i =0; i<4; ++i)
+//        {
+////            res_strings_chars.resize( i+1);
+//            char * out = reinterpret_cast<char *>(res_strings_chars.data()+i*2);
+//            std::cout << 4444 <<std::endl;
+//            *out = '0'+i;
+//            // char size
+//            ++out;
+//            *out = '\0';
+//            res_strings_offsets.push_back((i+1)*2);
+//        }
+
+        // rows?
+//        res_offsets.push_back(4);
+        res_offsets.resize(1);
+        res_offsets[0] = 4;
+
+        std::cout << 111111
+                  << "  "
+                  << res_offsets.back()
+                  << res_strings.size()
+                  << "  "
+                  << res_strings_offsets.back()
+                  << res_strings_chars.size()
+                  << std::endl;
+        return col_res;
+    }
+
+//private:
+//    template <typename T>
+//    bool executeNumber(
+//        const IColumn & src_data,
+//        ColumnString::Chars & out_vec,
+//        const size_t & column_idx,
+//        const size_t & rows,
+//        const size_t & size_per_row) const
+//    {
+//        const ColumnVector<T> * src_data_concrete = checkAndGetColumn<ColumnVector<T>>(&src_data);
+//
+//        if (!src_data_concrete)
+//        {
+//            return false;
+//        }
+//
+//        for (size_t row = 0; row < rows; ++row)
+//        {
+//            out_vec[row * size_per_row + column_idx] = static_cast<char>(src_data_concrete->getInt(row));
+//        }
+//        return true;
+//    }
+};
+class FunctionTest1 : public IFunction
+{
+public:
+    static constexpr auto name = "test1";
+    static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionTest1>(); }
+
+    String getName() const override { return name; }
+
+    bool isVariadic() const override { return false; }
+//    bool isInjective(const ColumnsWithTypeAndName &) const override { return false; }
+    size_t getNumberOfArguments() const override { return 0; }
+
+    DataTypePtr getReturnTypeImpl(const DataTypes & ) const override
+    {
+//        if (!arguments.empty())
+//            throw Exception(
+//                "Number of arguments for function " + getName() + " can't be " + toString(arguments.size()) + ", should be at least 1",
+//                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+        return std::make_shared<DataTypeArray>(std::make_shared<DataTypeString>());
+    }
+
+    bool useDefaultImplementationForConstants() const override { return false; }
+
+    ColumnPtr executeImpl(const ColumnsWithTypeAndName &, const DataTypePtr &, size_t) const override
+    {
+        auto col_res = ColumnArray::create(ColumnString::create());
+        ColumnArray::Offsets & res_offsets = col_res->getOffsets();
+
+        ColumnString & res_strings = typeid_cast<ColumnString &>(col_res->getData());
+        ColumnString::Chars & res_strings_chars = res_strings.getChars();
+        ColumnString::Offsets & res_strings_offsets = res_strings.getOffsets();
+        std::cout << 2222 <<std::endl;
+        res_strings.reserve(100);
+
+        std::cout << 3333 <<std::endl;
+        res_strings_chars.resize( 2);
+        res_strings_offsets.reserve(1);
+        char * out = reinterpret_cast<char *>(res_strings_chars.data());
+        *out = '1';
+        ++out;
+        *out = '\0';
+        res_strings_offsets.push_back(2);
+
+
+//        for (size_t i =0; i<4; ++i)
+//        {
+////            res_strings_chars.resize( i+1);
+//            char * out = reinterpret_cast<char *>(res_strings_chars.data()+i*2);
+//            std::cout << 4444 <<std::endl;
+//            *out = '0'+i;
+//            // char size
+//            ++out;
+//            *out = '\0';
+//            res_strings_offsets.push_back((i+1)*2);
+//        }
+
+        // rows?
+//        res_offsets.push_back(4);
+//        res_offsets[0] = 1;
+        res_offsets.push_back(1);
+
+        std::cout << 111111
+                  << "  "
+                  << res_offsets.back()
+                  << res_strings.size()
+                  << "  "
+                  << res_strings_offsets.back()
+                  << res_strings_chars.size()
+                  << std::endl;
+        return col_res;
+    }
+};
+
 class FunctionBitmaskToArray : public IFunction
 {
 public:
     static constexpr auto name = "bitmaskToArray";
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionBitmaskToArray>(); }
 
-    String getName() const override
-    {
-        return name;
-    }
+    String getName() const override { return name; }
 
     size_t getNumberOfArguments() const override { return 1; }
     bool isInjective(const ColumnsWithTypeAndName &) const override { return true; }
@@ -1583,8 +1711,8 @@ public:
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!isInteger(arguments[0]))
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName(),
-            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeArray>(arguments[0]);
     }
@@ -1636,19 +1764,14 @@ public:
         const IColumn * in_column = arguments[0].column.get();
         ColumnPtr out_column;
 
-        if (tryExecute<UInt8>(in_column, out_column) ||
-            tryExecute<UInt16>(in_column, out_column) ||
-            tryExecute<UInt32>(in_column, out_column) ||
-            tryExecute<UInt64>(in_column, out_column) ||
-            tryExecute<Int8>(in_column, out_column) ||
-            tryExecute<Int16>(in_column, out_column) ||
-            tryExecute<Int32>(in_column, out_column) ||
-            tryExecute<Int64>(in_column, out_column))
+        if (tryExecute<UInt8>(in_column, out_column) || tryExecute<UInt16>(in_column, out_column)
+            || tryExecute<UInt32>(in_column, out_column) || tryExecute<UInt64>(in_column, out_column)
+            || tryExecute<Int8>(in_column, out_column) || tryExecute<Int16>(in_column, out_column)
+            || tryExecute<Int32>(in_column, out_column) || tryExecute<Int64>(in_column, out_column))
             return out_column;
 
-        throw Exception("Illegal column " + arguments[0].column->getName()
-                        + " of first argument of function " + getName(),
-                        ErrorCodes::ILLEGAL_COLUMN);
+        throw Exception(
+            "Illegal column " + arguments[0].column->getName() + " of first argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
@@ -1658,10 +1781,7 @@ public:
     static constexpr auto name = "bitPositionsToArray";
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionBitPositionsToArray>(); }
 
-    String getName() const override
-    {
-        return name;
-    }
+    String getName() const override { return name; }
 
     size_t getNumberOfArguments() const override { return 1; }
     bool isInjective(const ColumnsWithTypeAndName &) const override { return true; }
@@ -1669,10 +1789,8 @@ public:
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!isInteger(arguments[0]))
-            throw Exception(ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
-                "Illegal type {} of argument of function {}",
-                getName(),
-                arguments[0]->getName());
+            throw Exception(
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT, "Illegal type {} of argument of function {}", getName(), arguments[0]->getName());
 
         return std::make_shared<DataTypeArray>(std::make_shared<DataTypeUInt64>());
     }
@@ -1738,24 +1856,19 @@ public:
         const IColumn * in_column = arguments[0].column.get();
         ColumnPtr result_column;
 
-        if (!((result_column = executeType<UInt8>(in_column))
-            || (result_column = executeType<UInt16>(in_column))
-            || (result_column = executeType<UInt32>(in_column))
-            || (result_column = executeType<UInt32>(in_column))
-            || (result_column = executeType<UInt64>(in_column))
-            || (result_column = executeType<UInt128>(in_column))
-            || (result_column = executeType<UInt256>(in_column))
-            || (result_column = executeType<Int8>(in_column))
-            || (result_column = executeType<Int16>(in_column))
-            || (result_column = executeType<Int32>(in_column))
-            || (result_column = executeType<Int64>(in_column))
-            || (result_column = executeType<Int128>(in_column))
-            || (result_column = executeType<Int256>(in_column))))
+        if (!((result_column = executeType<UInt8>(in_column)) || (result_column = executeType<UInt16>(in_column))
+              || (result_column = executeType<UInt32>(in_column)) || (result_column = executeType<UInt32>(in_column))
+              || (result_column = executeType<UInt64>(in_column)) || (result_column = executeType<UInt128>(in_column))
+              || (result_column = executeType<UInt256>(in_column)) || (result_column = executeType<Int8>(in_column))
+              || (result_column = executeType<Int16>(in_column)) || (result_column = executeType<Int32>(in_column))
+              || (result_column = executeType<Int64>(in_column)) || (result_column = executeType<Int128>(in_column))
+              || (result_column = executeType<Int256>(in_column))))
         {
-            throw Exception(ErrorCodes::ILLEGAL_COLUMN,
-               "Illegal column {} of first argument of function {}",
-               arguments[0].column->getName(),
-               getName());
+            throw Exception(
+                ErrorCodes::ILLEGAL_COLUMN,
+                "Illegal column {} of first argument of function {}",
+                arguments[0].column->getName(),
+                getName());
         }
 
         return result_column;
@@ -1768,18 +1881,15 @@ public:
     static constexpr auto name = "toStringCutToZero";
     static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionToStringCutToZero>(); }
 
-    String getName() const override
-    {
-        return name;
-    }
+    String getName() const override { return name; }
 
     size_t getNumberOfArguments() const override { return 1; }
 
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!isStringOrFixedString(arguments[0]))
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName(),
-            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeString>();
     }
@@ -1887,9 +1997,8 @@ public:
         if (tryExecuteFixedString(column, res_column) || tryExecuteString(column, res_column))
             return res_column;
 
-        throw Exception("Illegal column " + arguments[0].column->getName()
-                        + " of argument of function " + getName(),
-                        ErrorCodes::ILLEGAL_COLUMN);
+        throw Exception(
+            "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
@@ -1897,12 +2006,12 @@ public:
 class FunctionIPv6CIDRToRange : public IFunction
 {
 private:
-
 #if defined(__SSE2__)
 
-    #include <emmintrin.h>
+#    include <emmintrin.h>
 
-    static inline void applyCIDRMask(const UInt8 * __restrict src, UInt8 * __restrict dst_lower, UInt8 * __restrict dst_upper, UInt8 bits_to_keep)
+    static inline void
+    applyCIDRMask(const UInt8 * __restrict src, UInt8 * __restrict dst_lower, UInt8 * __restrict dst_upper, UInt8 bits_to_keep)
     {
         __m128i mask = _mm_loadu_si128(reinterpret_cast<const __m128i *>(getCIDRMaskIPv6(bits_to_keep).data()));
         __m128i lower = _mm_and_si128(_mm_loadu_si128(reinterpret_cast<const __m128i *>(src)), mask);
@@ -1940,16 +2049,16 @@ public:
     {
         const auto * first_argument = checkAndGetDataType<DataTypeFixedString>(arguments[0].get());
         if (!first_argument || first_argument->getN() != IPV6_BINARY_LENGTH)
-            throw Exception("Illegal type " + arguments[0]->getName() +
-                            " of first argument of function " + getName() +
-                            ", expected FixedString(" + toString(IPV6_BINARY_LENGTH) + ")",
-                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of first argument of function " + getName() + ", expected FixedString("
+                    + toString(IPV6_BINARY_LENGTH) + ")",
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         const DataTypePtr & second_argument = arguments[1];
         if (!isUInt8(second_argument))
-            throw Exception{"Illegal type " + second_argument->getName()
-                            + " of second argument of function " + getName()
-                            + ", expected UInt8", ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT};
+            throw Exception{
+                "Illegal type " + second_argument->getName() + " of second argument of function " + getName() + ", expected UInt8",
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT};
 
         DataTypePtr element = DataTypeFactory::instance().get("IPv6");
         return std::make_shared<DataTypeTuple>(DataTypes{element, element});
@@ -1967,17 +2076,15 @@ public:
         const auto * col_ip_in = checkAndGetColumn<ColumnFixedString>(column_ip.get());
 
         if (!col_ip_in && !col_const_ip_in)
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                + " of argument of function " + getName(),
-                ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
 
-        if ((col_const_ip_in && col_const_ip_in->getValue<String>().size() != IPV6_BINARY_LENGTH) ||
-            (col_ip_in && col_ip_in->getN() != IPV6_BINARY_LENGTH))
-            throw Exception("Illegal type " + col_type_name_ip.type->getName() +
-                            " of column " + column_ip->getName() +
-                            " argument of function " + getName() +
-                            ", expected FixedString(" + toString(IPV6_BINARY_LENGTH) + ")",
-                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+        if ((col_const_ip_in && col_const_ip_in->getValue<String>().size() != IPV6_BINARY_LENGTH)
+            || (col_ip_in && col_ip_in->getN() != IPV6_BINARY_LENGTH))
+            throw Exception(
+                "Illegal type " + col_type_name_ip.type->getName() + " of column " + column_ip->getName() + " argument of function "
+                    + getName() + ", expected FixedString(" + toString(IPV6_BINARY_LENGTH) + ")",
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         const auto & col_type_name_cidr = arguments[1];
         const ColumnPtr & column_cidr = col_type_name_cidr.column;
@@ -1986,9 +2093,8 @@ public:
         const auto * col_cidr_in = checkAndGetColumn<ColumnUInt8>(column_cidr.get());
 
         if (!col_const_cidr_in && !col_cidr_in)
-            throw Exception("Illegal column " + arguments[1].column->getName()
-                + " of argument of function " + getName(),
-                ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[1].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
 
         auto col_res_lower_range = ColumnFixedString::create(IPV6_BINARY_LENGTH);
         auto col_res_upper_range = ColumnFixedString::create(IPV6_BINARY_LENGTH);
@@ -2008,13 +2114,9 @@ public:
         {
             const size_t offset_ipv6 = offset * IPV6_BINARY_LENGTH;
 
-            const UInt8 * ip = col_const_ip_in
-                ? col_const_ip_value
-                : &col_ip_in->getChars()[offset_ipv6];
+            const UInt8 * ip = col_const_ip_in ? col_const_ip_value : &col_ip_in->getChars()[offset_ipv6];
 
-            UInt8 cidr = col_const_cidr_in
-                ? col_const_cidr_in->getValue<UInt8>()
-                : col_cidr_in->getData()[offset];
+            UInt8 cidr = col_const_cidr_in ? col_const_cidr_in->getValue<UInt8>() : col_cidr_in->getData()[offset];
 
             cidr = std::min(cidr, max_cidr_mask);
 
@@ -2032,15 +2134,15 @@ private:
     static inline std::pair<UInt32, UInt32> applyCIDRMask(UInt32 src, UInt8 bits_to_keep)
     {
         if (bits_to_keep >= 8 * sizeof(UInt32))
-            return { src, src };
+            return {src, src};
         if (bits_to_keep == 0)
-            return { UInt32(0), UInt32(-1) };
+            return {UInt32(0), UInt32(-1)};
 
         UInt32 mask = UInt32(-1) << (8 * sizeof(UInt32) - bits_to_keep);
         UInt32 lower = src & mask;
         UInt32 upper = lower | ~mask;
 
-        return { lower, upper };
+        return {lower, upper};
     }
 
 public:
@@ -2053,17 +2155,16 @@ public:
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!WhichDataType(arguments[0]).isUInt32())
-            throw Exception("Illegal type " + arguments[0]->getName() +
-                            " of first argument of function " + getName() +
-                            ", expected UInt32",
-                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of first argument of function " + getName() + ", expected UInt32",
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
 
         const DataTypePtr & second_argument = arguments[1];
         if (!isUInt8(second_argument))
-            throw Exception{"Illegal type " + second_argument->getName()
-                            + " of second argument of function " + getName()
-                            + ", expected UInt8", ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT};
+            throw Exception{
+                "Illegal type " + second_argument->getName() + " of second argument of function " + getName() + ", expected UInt8",
+                ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT};
 
         DataTypePtr element = DataTypeFactory::instance().get("IPv4");
         return std::make_shared<DataTypeTuple>(DataTypes{element, element});
@@ -2080,9 +2181,8 @@ public:
         const auto * col_const_ip_in = checkAndGetColumnConst<ColumnUInt32>(column_ip.get());
         const auto * col_ip_in = checkAndGetColumn<ColumnUInt32>(column_ip.get());
         if (!col_const_ip_in && !col_ip_in)
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                + " of argument of function " + getName(),
-                ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
 
         const auto & col_type_name_cidr = arguments[1];
         const ColumnPtr & column_cidr = col_type_name_cidr.column;
@@ -2091,9 +2191,8 @@ public:
         const auto * col_cidr_in = checkAndGetColumn<ColumnUInt8>(column_cidr.get());
 
         if (!col_const_cidr_in && !col_cidr_in)
-            throw Exception("Illegal column " + arguments[1].column->getName()
-                + " of argument of function " + getName(),
-                ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[1].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
 
         auto col_res_lower_range = ColumnUInt32::create();
         auto col_res_upper_range = ColumnUInt32::create();
@@ -2106,13 +2205,9 @@ public:
 
         for (size_t i = 0; i < input_rows_count; ++i)
         {
-            UInt32 ip = col_const_ip_in
-                ? col_const_ip_in->getValue<UInt32>()
-                : col_ip_in->getData()[i];
+            UInt32 ip = col_const_ip_in ? col_const_ip_in->getValue<UInt32>() : col_ip_in->getData()[i];
 
-            UInt8 cidr = col_const_cidr_in
-                ? col_const_cidr_in->getValue<UInt8>()
-                : col_cidr_in->getData()[i];
+            UInt8 cidr = col_const_cidr_in ? col_const_cidr_in->getValue<UInt8>() : col_cidr_in->getData()[i];
 
             std::tie(vec_res_lower_range[i], vec_res_upper_range[i]) = applyCIDRMask(ip, cidr);
         }
@@ -2133,8 +2228,8 @@ public:
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!isString(arguments[0]))
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName(),
-                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
         return std::make_shared<DataTypeUInt8>();
     }
 
@@ -2155,15 +2250,15 @@ public:
 
             for (size_t i = 0; i < vec_res.size(); ++i)
             {
-                vec_res[i] = DB::parseIPv4(reinterpret_cast<const char *>(&vec_src[prev_offset]), reinterpret_cast<unsigned char*>(&result));
+                vec_res[i]
+                    = DB::parseIPv4(reinterpret_cast<const char *>(&vec_src[prev_offset]), reinterpret_cast<unsigned char *>(&result));
                 prev_offset = offsets_src[i];
             }
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                            + " of argument of function " + getName(),
-                            ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
@@ -2179,8 +2274,8 @@ public:
     DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
     {
         if (!isString(arguments[0]))
-            throw Exception("Illegal type " + arguments[0]->getName() + " of argument of function " + getName(),
-                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
 
         return std::make_shared<DataTypeUInt8>();
     }
@@ -2203,16 +2298,132 @@ public:
 
             for (size_t i = 0; i < vec_res.size(); ++i)
             {
-                vec_res[i] = DB::parseIPv6(reinterpret_cast<const char *>(&vec_src[prev_offset]), reinterpret_cast<unsigned char*>(v));
+                vec_res[i] = DB::parseIPv6(reinterpret_cast<const char *>(&vec_src[prev_offset]), reinterpret_cast<unsigned char *>(v));
                 prev_offset = offsets_src[i];
             }
             return col_res;
         }
         else
-            throw Exception("Illegal column " + arguments[0].column->getName()
-                            + " of argument of function " + getName(),
-                            ErrorCodes::ILLEGAL_COLUMN);
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
     }
 };
 
-}
+class FunctionPunyCode : public IFunction
+{
+private:
+    //    size_t byte1 = 0x007f;
+    //    size_t byte2 = 0x07ff;
+    //    size_t byte3 = 0xffff;
+    //    size_t byte4 = 0x10ffff;
+    size_t byte1 = 0b00000000;
+    size_t byte2 = 0b10000000;
+    size_t byte3 = 0b11000000;
+    size_t byte4 = 0b11100000;
+    size_t byte5 = 0b11110000;
+    size_t shift = 6;
+
+public:
+    static constexpr auto name = "PunyCode";
+    static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionPunyCode>(); }
+
+    String getName() const override { return name; }
+
+    size_t getNumberOfArguments() const override { return 1; }
+
+    DataTypePtr getReturnTypeImpl(const DataTypes & arguments) const override
+    {
+        if (!isString(arguments[0]))
+            throw Exception(
+                "Illegal type " + arguments[0]->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT);
+
+        return std::make_shared<DataTypeString>();
+    }
+
+    bool useDefaultImplementationForConstants() const override { return true; }
+    ColumnPtr executeImpl(const ColumnsWithTypeAndName & arguments, const DataTypePtr &, size_t /*input_rows_count*/) const override
+    {
+        const ColumnPtr & column = arguments[0].column;
+
+        if (const auto * col_in = checkAndGetColumn<ColumnString>(column.get()))
+        {
+            auto col_str = ColumnString::create();
+
+            ColumnString::Chars & out_vec = col_str->getChars();
+            ColumnString::Offsets & out_offsets = col_str->getOffsets();
+
+            const ColumnString::Chars & in_vec = col_in->getChars();
+            const ColumnString::Offsets & in_offsets = col_in->getOffsets();
+
+            std::vector<UInt32> unicode_vector(in_vec.size());
+            UInt32 * unicode = reinterpret_cast<UInt32 *>(unicode_vector.data());
+            size_t unicode_vec_len = 0;
+
+            size_t size = in_offsets.size();
+            out_offsets.resize(size);
+
+            out_vec.resize(in_vec.size());
+
+            char * begin = reinterpret_cast<char *>(out_vec.data());
+
+            size_t remain = 0;
+            for (size_t i = 0; i < in_offsets[0] - 1; ++i)
+            {
+                std::cout << 111 << " " << in_vec[i] << std::endl;
+
+                if ((in_vec[i] & byte5) == byte5)
+                {
+                    remain = 3;
+                    *unicode += (in_vec[i] ^ byte5) << (remain * shift);
+                }
+                else if ((in_vec[i] & byte4) == byte4)
+                {
+                    remain = 2;
+                    *unicode += (in_vec[i] ^ byte4) << (remain * shift);
+                }
+
+                else if ((in_vec[i] & byte3) == byte3)
+                {
+                    remain = 1;
+                    *unicode += (in_vec[i] ^ byte3) << (remain * shift);
+                }
+                else if ((in_vec[i] & byte2) == byte2)
+                {
+                    --remain;
+                    *unicode += (in_vec[i] ^ byte2) << (remain * shift);
+                }
+                else if ((in_vec[i] & byte1) == byte1)
+                {
+                    *unicode += (in_vec[i] ^ byte1);
+                }
+                else
+                {
+                    throw Exception(
+                        "Illegal column1111 " + arguments[0].column->getName() + " of argument of function " + getName(),
+                        ErrorCodes::ILLEGAL_COLUMN);
+                }
+                if (remain == 0)
+                {
+                    ++unicode_vec_len;
+                    ++unicode;
+                }
+
+                *begin = in_vec[i];
+                ++begin;
+            }
+            unicode_vector.resize(unicode_vec_len);
+
+            for (size_t p = 0; p < unicode_vector.size(); p++)
+            {
+                std::cout << 3333 << " " << unicode_vector[p] << std::endl;
+            }
+
+            out_offsets[0] = in_offsets[0];
+            return col_str;
+        }
+        else
+            throw Exception(
+                "Illegal column " + arguments[0].column->getName() + " of argument of function " + getName(), ErrorCodes::ILLEGAL_COLUMN);
+    }
+};
+};

@@ -32,6 +32,10 @@ void registerFunctionsCoding(FunctionFactory & factory)
     factory.registerFunction<FunctionIPv4CIDRToRange>();
     factory.registerFunction<FunctionIsIPv4String>();
     factory.registerFunction<FunctionIsIPv6String>();
+    factory.registerFunction<FunctionPunyCode>();
+    factory.registerFunction<FunctionTest>(FunctionFactory::CaseInsensitive);
+    factory.registerFunction<FunctionTest1>(FunctionFactory::CaseInsensitive);
+
 
     factory.registerFunction<FunctionIPv4NumToString<0, NameFunctionIPv4NumToString>>();
     factory.registerFunction<FunctionIPv4NumToString<1, NameFunctionIPv4NumToStringClassC>>();

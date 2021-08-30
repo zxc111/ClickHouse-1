@@ -415,6 +415,8 @@ struct ToDateTimeTransform64Signed
 
     static inline NO_SANITIZE_UNDEFINED ToType execute(const FromType & from, const DateLUTImpl &)
     {
+        std::cout << 2222 << std::endl;
+
         if (from < 0)
             return 0;
         return std::min(time_t(from), time_t(0xFFFFFFFF));
@@ -1414,6 +1416,8 @@ public:
         }
         else if constexpr (to_decimal)
         {
+            std::cout << 1111 << std::endl;
+
             UInt64 scale = extractToDecimalScale(arguments[1]);
 
             if constexpr (std::is_same_v<Name, NameToDecimal32>)
@@ -1429,6 +1433,8 @@ public:
         }
         else
         {
+            std::cout << 22222 << std::endl;
+
             // Optional second argument with time zone for DateTime.
             UInt8 timezone_arg_position = 1;
             UInt32 scale [[maybe_unused]] = DataTypeDateTime64::default_scale;
@@ -1436,6 +1442,8 @@ public:
             // DateTime64 requires more arguments: scale and timezone. Since timezone is optional, scale should be first.
             if (isDateTime64<Name, ToDataType>(arguments))
             {
+                std::cout << 33333 << std::endl;
+
                 timezone_arg_position += 1;
                 scale = static_cast<UInt32>(arguments[1].column->get64(0));
 
@@ -1447,11 +1455,21 @@ public:
             }
 
             if constexpr (std::is_same_v<ToDataType, DataTypeDateTime>)
-                return std::make_shared<DataTypeDateTime>(extractTimeZoneNameFromFunctionArguments(arguments, timezone_arg_position, 0));
+            {
+                std::cout << 44444 << std::endl;
+            return std::make_shared<DataTypeDateTime>(extractTimeZoneNameFromFunctionArguments(arguments, timezone_arg_position, 0));
+
+            }
+
             else if constexpr (std::is_same_v<ToDataType, DataTypeDateTime64>)
                 throw Exception("Unexpected branch in code of conversion function: it is a bug.", ErrorCodes::LOGICAL_ERROR);
             else
+            {
+                std::cout << 55555 << std::endl;
+
                 return std::make_shared<ToDataType>();
+
+            }
         }
     }
 
@@ -1533,12 +1551,14 @@ private:
         const DataTypePtr from_type = removeNullable(arguments[0].type);
         ColumnPtr result_column;
 
+        std::cout << 515151<< std::endl;
         auto call = [&](const auto & types, const auto & tag) -> bool
         {
             using Types = std::decay_t<decltype(types)>;
             using LeftDataType = typename Types::LeftType;
             using RightDataType = typename Types::RightType;
             using SpecialTag = std::decay_t<decltype(tag)>;
+            std::cout << 525252<< std::endl;
 
             if constexpr (IsDataTypeDecimal<RightDataType>)
             {
@@ -1589,6 +1609,7 @@ private:
 
             return true;
         };
+        std::cout << 535353<< std::endl;
 
         if (isDateTime64<Name, ToDataType>(arguments))
         {
@@ -1618,7 +1639,11 @@ private:
             if (to_nullable && WhichDataType(from_type).isStringOrFixedString())
                 done = callOnIndexAndDataType<ToDataType>(from_type->getTypeId(), call, ConvertReturnNullOnErrorTag{});
             else
+            {
+                std::cout << 545454 << std::endl;
                 done = callOnIndexAndDataType<ToDataType>(from_type->getTypeId(), call, ConvertDefaultBehaviorTag{});
+
+            }
         }
 
         if (!done)
@@ -1694,8 +1719,27 @@ public:
 
             res = scale == 0 ? res = std::make_shared<DataTypeDateTime>(timezone) : std::make_shared<DataTypeDateTime64>(scale, timezone);
         }
+        else if (std::is_same_v<ToDataType, DataTypeDateTime>)
+        {
+            UInt8 timezone_arg_position = 1;
+            UInt32 scale [[maybe_unused]] = DataTypeDateTime64::default_scale;
+            return std::make_shared<DataTypeDateTime>(extractTimeZoneNameFromFunctionArguments(arguments, timezone_arg_position, 0));
+
+        }
         else
         {
+//            // Optional second argument with time zone for DateTime.
+//            UInt8 timezone_arg_position = 1;
+//            UInt32 scale [[maybe_unused]] = DataTypeDateTime64::default_scale;
+//
+//            if constexpr (std::is_same_v<ToDataType, DataTypeDateTime>)
+//                return std::make_shared<DataTypeDateTime>(extractTimeZoneNameFromFunctionArguments(arguments, timezone_arg_position, 0));
+//            else if constexpr (std::is_same_v<ToDataType, DataTypeDateTime64>)
+//                throw Exception("Unexpected branch in code of conversion function: it is a bug.", ErrorCodes::LOGICAL_ERROR);
+//            else
+//                return std::make_shared<ToDataType>();
+//
+
             if ((arguments.size() != 1 && arguments.size() != 2) || (to_decimal && arguments.size() != 2))
                 throw Exception("Number of arguments for function " + getName() + " doesn't match: passed " + toString(arguments.size()) +
                     ", should be 1 or 2. Second argument only make sense for DateTime (time zone, optional) and Decimal (scale).",
@@ -1762,6 +1806,13 @@ public:
     ColumnPtr executeInternal(const ColumnsWithTypeAndName & arguments, const DataTypePtr & result_type, size_t input_rows_count, UInt32 scale = 0) const
     {
         const IDataType * from_type = arguments[0].type.get();
+
+//        if (checkAndGetDataType<DataTypeInt32>(from_type))
+//        {
+//            UInt8 timezone_arg_position = 1;
+//            return std::make_shared<DataTypeDateTime>(extractTimeZoneNameFromFunctionArguments(arguments, timezone_arg_position, 0));
+//
+//        }
 
         if (checkAndGetDataType<DataTypeString>(from_type))
         {

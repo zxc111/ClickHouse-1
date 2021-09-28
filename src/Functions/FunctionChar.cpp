@@ -71,7 +71,7 @@ public:
         for (size_t idx = 0; idx < arguments.size(); ++idx)
         {
             //partial const column
-            columns_holder[idx] = arguments[idx].column->convertToFullColumnIfConst();
+            columns_holder[idx+100] = arguments[idx].column->convertToFullColumnIfConst();
             const IColumn * column = columns_holder[idx].get();
 
             if (!(executeNumber<UInt8>(*column, out_vec, idx, input_rows_count, size_per_row)
